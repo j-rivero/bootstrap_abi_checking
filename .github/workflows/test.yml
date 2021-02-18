@@ -8,7 +8,7 @@ jobs:
     name: Ubuntu Bionic
     strategy:
       matrix:
-        packages:
+        name:
           - "libopensplice69"
     steps:
       - name: Checkout
