@@ -1,0 +1,51 @@
+FROM osrf/ros:kinetic-desktop
+
+RUN apt-get update && apt-get install -qy\
+    software-properties-common \
+    wget \
+    python3-pip \
+    python3-venv \
+    abi-dumper \
+    git \
+    devscripts
+
+RUN mkdir -p /tmp/bootstrap/extracted /tmp/prerelease/extracted
+
+WORKDIR /tmp/bootstrap
+RUN wget -q http://repositories.ros.org/ubuntu/main/dists/xenial/main/binary-amd64/Packages && \
+   for p in $(cat Packages | grep python3-lark-parser | grep pool | grep -v dbg | awk '{print $2}'); do wget -q http://repositories.ros.org/ubuntu/main/$p; done
+
+RUN for p in $(ls *.deb); do dpkg -X $p extracted; done
+
+WORKDIR /tmp/prerelease
+RUN wget -q http://packages.osrfoundation.org/gazebo/ubuntu-prerelease/dists/xenial/main/binary-amd64/Packages && \
+   for p in $(cat Packages | grep python3-lark-parser | grep pool | grep -v dbg | awk '{print $2}'); do wget -q  http://packages.osrfoundation.org/gazebo/ubuntu-prerelease/$p; done
+
+RUN mkdir -p /py3venv
+# TODO consolidate above
+# RUN apt-get update && apt-get install -qy\
+
+# build dependencies
+# RUN apt-get build-dep -qy opensplice69
+
+WORKDIR /tmp
+
+SHELL ["/bin/bash", "-c"]
+RUN for p in $(find bootstrap/ -name *.deb); do pre_p=${p/bootstrap/prerelease} && debdiff ${p} $(ls ${pre_p/-*/}*.deb) || true; done 
+
+RUN git clone https://github.com/lvc/abi-compliance-checker.git
+WORKDIR /tmp/abi-compliance-checker
+RUN make && make install
+
+RUN python3 -m venv /py3venv
+RUN echo revision 1
+RUN . /py3venv/bin/activate && pip install git+https://github.com/osrf/auto-abi-checker.git
+
+ENV COMPILATION_FLAGS=''
+
+WORKDIR /tmp
+
+# files broken in sources
+#RUN find /tmp/bootstrap/extracted /tmp/pyside_ppa/extracted \( -name pyside2_qttest_python.h -o -name pyside2_global.h \) -exec rm {} \;
+
+RUN . /py3venv/bin/activate && auto-abi.py --orig-type local-dir --orig /tmp/bootstrap/extracted --new-type local-dir --new /tmp/bootstrap/extracted || true
