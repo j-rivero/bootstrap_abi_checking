@@ -14,12 +14,11 @@ RUN mkdir -p /tmp/bootstrap/extracted /tmp/prerelease/extracted
 WORKDIR /tmp/bootstrap
 RUN wget -q http://repositories.ros.org/ubuntu/main/dists/xenial/main/binary-amd64/Packages && \
    for p in $(cat Packages | grep python3-lark-parser | grep pool | grep -v dbg | awk '{print $2}'); do wget -q http://repositories.ros.org/ubuntu/main/$p; done
-
 RUN for p in $(ls *.deb); do dpkg -X $p extracted; done
 
 WORKDIR /tmp/prerelease
-RUN wget -q http://packages.osrfoundation.org/gazebo/ubuntu-prerelease/dists/xenial/main/binary-amd64/Packages && \
-   for p in $(cat Packages | grep python3-lark-parser | grep pool | grep -v dbg | awk '{print $2}'); do wget -q  http://packages.osrfoundation.org/gazebo/ubuntu-prerelease/$p; done
+RUN wget -q http://packages.osrfoundation.org/gazebo/ubuntu-prerelease/pool/main/l/lark-parser/python3-lark-parser_0.7.2-2osrf~xenial_all.deb
+RUN for p in $(ls *.deb); do dpkg -X $p extracted; done
 
 RUN mkdir -p /py3venv
 # TODO consolidate above
