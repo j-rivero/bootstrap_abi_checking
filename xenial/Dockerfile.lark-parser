@@ -31,12 +31,18 @@ RUN mkdir -p /py3venv
 WORKDIR /tmp
 
 SHELL ["/bin/bash", "-c"]
-RUN for p in $(find bootstrap/ -name *.deb); do \ 
-       pre_p=${p/bootstrap/prerelease} \
-       prerelease_pkg=$(ls ${pre_p/-*/}*.deb) \
-       echo -e "\n COMPARING ${p} -- ${prerelease_pkg} \n" \
-       debdiff ${p} ${prerelease_pkg} || true \
-    done 
+RUN for p in $(find bootstrap/ -name *.deb); do \
+       echo "pkg: ${p}" \
+         && pre_p=${p/bootstrap/prerelease} \
+         && prerelease_pkg= \
+         && echo "prep_p: ${pre_p}" \
+         && prerelease_pkg=$(ls ${pre_p%-*}*.deb) \
+         && echo -e "\n************************\nCOMPARING ${p} -- ${prerelease_pkg} \n" \
+         && debdiff ${p} ${prerelease_pkg} \
+         || if [[ $? == 255 ]]; then exit 1; fi \
+         && debdiff ${p} ${prerelease_pkg} > diff_log || true \
+         && grep 'File lists identical' diff_log ;  \
+    done
 
 RUN git clone https://github.com/lvc/abi-compliance-checker.git
 WORKDIR /tmp/abi-compliance-checker
