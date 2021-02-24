@@ -30,7 +30,7 @@ RUN mkdir -p /py3venv
 WORKDIR /tmp
 
 SHELL ["/bin/bash", "-c"]
-RUN for p in $(find bootstrap/ -name *.deb); do pre_p=${p/bootstrap/prerelease} && debdiff ${p} $(ls ${pre_p/-*/}*.deb) || true; done 
+RUN for p in $(find bootstrap/ -name *.deb); do pre_p=${p/bootstrap/prerelease} && echo -n "\n COMPARING ${p/-*/} \n" && debdiff ${p} $(ls ${pre_p/-*/}*.deb) || true; done 
 
 RUN git clone https://github.com/lvc/abi-compliance-checker.git
 WORKDIR /tmp/abi-compliance-checker
