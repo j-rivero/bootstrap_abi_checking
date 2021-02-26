@@ -17,7 +17,6 @@ RUN wget -q http://repositories.ros.org/ubuntu/main/dists/xenial/main/binary-amd
 RUN for p in $(ls *.deb); do dpkg -X $p extracted; done
 
 WORKDIR /tmp/prerelease
-# http://ppa.launchpad.net/j-rivero/reproduce-ceres-xenial/ubuntu/pool/main/c/ceres-solver/ceres-solver-doc_1.12.0+dfsg0-4_all.deb
 RUN wget -q http://ppa.launchpad.net/j-rivero/reproduce-ceres-xenial/ubuntu/dists/xenial/main/binary-amd64/Packages.gz && gzip -d Packages.gz && \
    for p in $(cat Packages | grep ceres-solver | grep pool | grep -v dbg | awk '{print $2}'); do wget -q http://ppa.launchpad.net/j-rivero/reproduce-ceres-xenial/ubuntu/$p; done
 RUN for p in $(ls *.deb); do dpkg -X $p extracted; done
@@ -27,7 +26,7 @@ RUN mkdir -p /py3venv
 # RUN apt-get update && apt-get install -qy\
 
 # build dependencies
-# RUN apt-get build-dep -qy opensplice69
+RUN apt-get build-dep -qy ceres-solver google-glog
 
 WORKDIR /tmp
 
