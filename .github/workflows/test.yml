@@ -27,6 +27,7 @@ jobs:
       matrix:
         name:
           - "lark-parser"
+          - "ceres-solver"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
