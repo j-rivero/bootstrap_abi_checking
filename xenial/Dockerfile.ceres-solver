@@ -1,5 +1,8 @@
 FROM osrf/ros:kinetic-desktop
 
+ENV PPA_NAME="reproduce-ceres-xenial"
+ENV SOURCE_PKG_NAME="ceres-solver"
+
 RUN apt-get update && apt-get install -qy\
     software-properties-common \
     wget \
@@ -10,18 +13,18 @@ RUN apt-get update && apt-get install -qy\
     devscripts \
     abigail-tools
 
-RUN add-apt-repository ppa:j-rivero/reproduce-ceres-xenial && apt-get update
+RUN add-apt-repository ppa:j-rivero/$PPA_NAME && apt-get update
 
 RUN mkdir -p /tmp/bootstrap/extracted /tmp/prerelease/extracted
 
 WORKDIR /tmp/bootstrap
 RUN wget -q http://repositories.ros.org/ubuntu/main/dists/xenial/main/binary-amd64/Packages && \
-   for p in $(cat Packages | grep ceres-solver | grep pool | grep -v dbg | awk '{print $2}'); do wget -q http://repositories.ros.org/ubuntu/main/$p; done
+   for p in $(cat Packages | grep $SOURCE_PKG_NAME | grep pool | grep -v dbg | awk '{print $2}'); do wget -q http://repositories.ros.org/ubuntu/main/$p; done
 RUN for p in $(ls *.deb); do dpkg -X $p extracted; done
 
 WORKDIR /tmp/prerelease
-RUN wget -q http://ppa.launchpad.net/j-rivero/reproduce-ceres-xenial/ubuntu/dists/xenial/main/binary-amd64/Packages.gz && gzip -d Packages.gz && \
-   for p in $(cat Packages | grep ceres-solver | grep pool | grep -v dbg | awk '{print $2}'); do wget -q http://ppa.launchpad.net/j-rivero/reproduce-ceres-xenial/ubuntu/$p; done
+RUN wget -q http://ppa.launchpad.net/j-rivero/$PPA_NAME/ubuntu/dists/xenial/main/binary-amd64/Packages.gz && gzip -d Packages.gz && \
+   for p in $(cat Packages | grep $SOURCE_PKG_NAME | grep pool | grep -v dbg | awk '{print $2}'); do wget -q http://ppa.launchpad.net/j-rivero/$PPA_NAME/ubuntu/$p; done
 RUN for p in $(ls *.deb); do dpkg -X $p extracted; done
 
 RUN mkdir -p /py3venv
@@ -29,7 +32,7 @@ RUN mkdir -p /py3venv
 # RUN apt-get update && apt-get install -qy\
 
 # build dependencies
-RUN apt-get build-dep -qy ceres-solver google-glog
+RUN apt-get build-dep -qy $SOURCE_PKG_NAME
 
 WORKDIR /tmp
 
