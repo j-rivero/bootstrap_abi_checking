@@ -66,7 +66,7 @@ WORKDIR /tmp
 
 # Try running diff directly
 RUN echo "********* DIFF DIRECT ON HEADERS *******"
-RUN diff -x '*.h' -ur /tmp/bootstrap/extracted /tmp/prerelease/extracted || true
+RUN diff -x '*.h' -x '*.hh' -ur /tmp/bootstrap/extracted /tmp/prerelease/extracted || true
 
 # files broken in sources
 RUN . /py3venv/bin/activate && auto-abi.py --orig-type local-dir --orig /tmp/bootstrap/extracted --new-type local-dir --new /tmp/prerelease/extracted || true
