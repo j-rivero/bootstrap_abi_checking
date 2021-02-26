@@ -56,7 +56,9 @@ ENV COMPILATION_FLAGS=''
 
 WORKDIR /tmp
 
-# files broken in sources
-#RUN find /tmp/bootstrap/extracted /tmp/pyside_ppa/extracted \( -name pyside2_qttest_python.h -o -name pyside2_global.h \) -exec rm {} \;
+# Try running diff directly
+RUN echo "********* DIFF DIRECT *******"
+RUN diff -ur /tmp/bootstrap/extracted /tmp/prerelease/extracted
 
-RUN . /py3venv/bin/activate && auto-abi.py --orig-type local-dir --orig /tmp/bootstrap/extracted --new-type local-dir --new /tmp/bootstrap/extracted || true
+# files broken in sources
+RUN . /py3venv/bin/activate && auto-abi.py --orig-type local-dir --orig /tmp/bootstrap/extracted --new-type local-dir --new /tmp/prerelease/extracted || true
