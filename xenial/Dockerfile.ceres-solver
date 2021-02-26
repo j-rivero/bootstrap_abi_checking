@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -qy\
     devscripts \
     abigail-tools
 
-RUN add-apt-repository ppa:j-rivero/$PPA_NAME && apt-get update
+RUN add-apt-repository -s ppa:j-rivero/$PPA_NAME && apt-get update
 
 RUN mkdir -p /tmp/bootstrap/extracted /tmp/prerelease/extracted
 
