@@ -1,0 +1,72 @@
+FROM osrf/ros:kinetic-desktop
+
+ENV PPA_NAME="reproduce-pytest-runner-xenial"
+ENV SOURCE_PKG_NAME="pytest-runner"
+
+RUN apt-get update && apt-get install -qy\
+    software-properties-common \
+    wget \
+    python3-pip \
+    python3-venv \
+    abi-dumper \
+    git \
+    devscripts \
+    abigail-tools
+
+RUN add-apt-repository -s ppa:j-rivero/$PPA_NAME && apt-get update
+
+RUN mkdir -p /tmp/bootstrap/extracted /tmp/prerelease/extracted
+
+WORKDIR /tmp/bootstrap
+RUN wget -q http://repositories.ros.org/ubuntu/main/dists/xenial/main/binary-amd64/Packages && \
+   for p in $(cat Packages | grep $SOURCE_PKG_NAME | grep pool | grep -v dbg | awk '{print $2}'); do wget -q http://repositories.ros.org/ubuntu/main/$p; done
+RUN for p in $(ls *.deb); do dpkg -X $p extracted; done
+
+WORKDIR /tmp/prerelease
+RUN wget -q http://ppa.launchpad.net/j-rivero/$PPA_NAME/ubuntu/dists/xenial/main/binary-amd64/Packages.gz && gzip -d Packages.gz && \
+   for p in $(cat Packages | grep $SOURCE_PKG_NAME | grep pool | grep -v dbg | awk '{print $2}'); do wget -q http://ppa.launchpad.net/j-rivero/$PPA_NAME/ubuntu/$p; done
+RUN for p in $(ls *.deb); do dpkg -X $p extracted; done
+
+RUN mkdir -p /py3venv
+# TODO consolidate above
+# RUN apt-get update && apt-get install -qy\
+
+# build dependencies
+RUN apt-get build-dep -qy $SOURCE_PKG_NAME
+
+WORKDIR /tmp
+
+SHELL ["/bin/bash", "-c"]
+RUN for p in $(find bootstrap/ -name *.deb); do \
+       echo "pkg: ${p}" \
+         && pre_p=${p/bootstrap/prerelease} \
+         && prerelease_pkg= \
+         && echo "prep_p: ${pre_p}" \
+         && prerelease_pkg=$(ls ${pre_p%-*}*.deb) \
+         && echo -e "\n************************\nCOMPARING DEBDIFF ${p} -- ${prerelease_pkg} \n" \
+         && debdiff ${p} ${prerelease_pkg} \
+         || if [[ $? == 255 ]]; then exit 1; fi \
+         && debdiff ${p} ${prerelease_pkg} > diff_log || true \
+         && grep 'File lists identical' diff_log || true \
+         && echo -e "\n************************\nCOMPARING ABIPKGDIFF ${p} -- ${prerelease_pkg} \n" \
+         && abipkgdiff --verbose ${p} ${prerelease_pkg} ; \
+    done
+
+RUN git clone https://github.com/lvc/abi-compliance-checker.git
+WORKDIR /tmp/abi-compliance-checker
+RUN make && make install
+
+RUN python3 -m venv /py3venv
+RUN echo revision 1
+RUN . /py3venv/bin/activate && pip install git+https://github.com/osrf/auto-abi-checker.git
+
+ENV COMPILATION_FLAGS=''
+
+WORKDIR /tmp
+
+# Try running diff directly
+RUN echo "********* DIFF DIRECT ON HEADERS *******"
+RUN diff -x '*.h' -x '*.hh' -ur /tmp/bootstrap/extracted /tmp/prerelease/extracted || true
+
+# files broken in sources
+RUN . /py3venv/bin/activate && auto-abi.py --orig-type local-dir --orig /tmp/bootstrap/extracted --new-type local-dir --new /tmp/prerelease/extracted || true
