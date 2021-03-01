@@ -28,6 +28,7 @@ jobs:
         name:
           - "lark-parser"
           - "ceres-solver"
+          - "pytest-runner"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
